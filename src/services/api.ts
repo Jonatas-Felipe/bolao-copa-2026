@@ -1,0 +1,132 @@
+import axios from 'axios';
+import type { MatchAPI, MatchesResponse, Match, Team, GroupStanding, RankingEntry } from '../types';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3002/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor: injeta o token em toda request autenticada
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Interceptor: se receber 401, desloga automaticamente
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Normaliza a resposta da API para o formato interno */
+export function normalizeMatch(m: MatchAPI): Match {
+  return {
+    id: m.id,
+    homeTeam: m.homeTeamName,
+    awayTeam: m.awayTeamName,
+    homeFlag: m.homeFlag,
+    awayFlag: m.awayFlag,
+    date: new Date(m.date),
+    finished: m.finished,
+    timeElapsed: m.timeElapsed,
+    homeScore: m.homeScore != null ? parseInt(m.homeScore) : null,
+    awayScore: m.awayScore != null ? parseInt(m.awayScore) : null,
+    group: m.group,
+    type: m.type,
+  };
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+export interface LoginResponse {
+  user: { id: string; name: string; points: number };
+  token: string;
+}
+
+export interface RegisterResponse {
+  id: string;
+  name: string;
+  points: number;
+  createdAt: string;
+}
+
+export const register = (name: string, pin: string) =>
+  api.post<RegisterResponse>('/auth/register', { name, pin });
+
+export const login = (name: string, pin: string) =>
+  api.post<LoginResponse>('/auth/login', { name, pin });
+
+export const logout = () => api.post('/auth/logout');
+
+// ─── Matches ─────────────────────────────────────────────────────────────────
+
+export interface FetchMatchesParams {
+  page?: number;
+  limit?: number;
+  type?: string;
+  group?: string;
+  finished?: boolean;
+}
+
+export interface FetchMatchesResult {
+  matches: Match[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export const fetchMatches = async (params?: FetchMatchesParams): Promise<FetchMatchesResult> => {
+  const { data } = await api.get<MatchesResponse>('/matches', { params });
+  return {
+    matches: data.matches.map(normalizeMatch),
+    total: data.total,
+    page: data.page,
+    totalPages: data.totalPages,
+  };
+};
+
+export const syncMatches = () => api.post<{ created: number; updated: number }>('/matches/sync');
+
+// ─── Teams ───────────────────────────────────────────────────────────────────
+
+export const fetchTeams = () => api.get<Team[]>('/teams');
+
+// ─── Groups ──────────────────────────────────────────────────────────────────
+
+export const fetchGroups = () => api.get<GroupStanding[]>('/groups');
+
+// ─── Guesses ─────────────────────────────────────────────────────────────────
+
+export interface GuessResponse {
+  id: string;
+  homeScore: number;
+  awayScore: number;
+  userId: string;
+  matchId: string;
+}
+
+export const submitGuess = (matchId: string, homeScore: number, awayScore: number) =>
+  api.post<GuessResponse>('/guesses', { matchId, homeScore, awayScore });
+
+export const fetchMyGuesses = () => api.get<GuessResponse[]>('/guesses/me');
+
+// ─── Ranking ─────────────────────────────────────────────────────────────────
+
+export const fetchRanking = () =>
+  api.get<RankingEntry[]>('/ranking');
+
+export default api;

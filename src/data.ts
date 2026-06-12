@@ -1,0 +1,71 @@
+import { Match, RankingEntry } from './types';
+import { addDays, subDays, addHours } from 'date-fns';
+
+const now = new Date();
+
+export const mockMatches: Match[] = [
+  {
+    id: '1',
+    homeTeam: 'Mexico',
+    awayTeam: 'South Africa',
+    homeFlag: 'https://flagcdn.com/w80/mx.png',
+    awayFlag: 'https://flagcdn.com/w80/za.png',
+    date: addHours(now, 0.25),
+    finished: false,
+    timeElapsed: 'notstarted',
+    homeScore: null,
+    awayScore: null,
+    group: 'A',
+    type: 'group',
+  },
+  {
+    id: '2',
+    homeTeam: 'Argentina',
+    awayTeam: 'France',
+    homeFlag: 'https://flagcdn.com/w80/ar.png',
+    awayFlag: 'https://flagcdn.com/w80/fr.png',
+    date: addHours(now, 4),
+    finished: false,
+    timeElapsed: 'notstarted',
+    homeScore: null,
+    awayScore: null,
+    group: 'B',
+    type: 'group',
+  },
+  {
+    id: '3',
+    homeTeam: 'Brazil',
+    awayTeam: 'Germany',
+    homeFlag: 'https://flagcdn.com/w80/br.png',
+    awayFlag: 'https://flagcdn.com/w80/de.png',
+    date: addDays(now, 1),
+    finished: false,
+    timeElapsed: 'notstarted',
+    homeScore: null,
+    awayScore: null,
+    group: 'C',
+    type: 'group',
+  },
+  {
+    id: '4',
+    homeTeam: 'Spain',
+    awayTeam: 'Portugal',
+    homeFlag: 'https://flagcdn.com/w80/es.png',
+    awayFlag: 'https://flagcdn.com/w80/pt.png',
+    date: subDays(now, 1),
+    finished: true,
+    timeElapsed: 'finished',
+    homeScore: 2,
+    awayScore: 2,
+    group: 'D',
+    type: 'group',
+  },
+];
+
+export const mockRanking: RankingEntry[] = [
+  { id: '4', name: 'Marta Silva', points: 25 },
+  { id: '1', name: 'Neymar Jr', points: 15 },
+  { id: 'my-user', name: 'Você (Teste)', points: 12 },
+  { id: '2', name: 'Tite', points: 8 },
+  { id: '3', name: 'Ronaldo', points: 5 },
+];
