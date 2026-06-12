@@ -1,0 +1,6 @@
+{
+  "name": "Bolão Copa 2026",
+  "description": "Aplicativo de palpites para a Copa do Mundo 2026 com cores do Brasil e bloqueio de apostas pré-jogo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
