@@ -117,9 +117,10 @@ export default function Ranking({ userId }: RankingProps) {
           Como funciona a pontuação?
         </h3>
         <ul className="text-sm text-white/80 space-y-2 list-disc list-inside">
-          <li><strong>5 pontos:</strong> Placar exato (ex: apostou 2x1 e deu 2x1).</li>
-          <li><strong>3 pontos:</strong> Acertou o vencedor e o saldo de gols (ex: apostou 2x1, deu 3x2).</li>
-          <li><strong>2 pontos:</strong> Acertou o empate com saldo de gol errado (ex: apostou 1x1, deu 2x2).</li>
+          <li><strong>7 pontos:</strong> Placar exato (ex: apostou 2x1 e deu 2x1).</li>
+          <li><strong>5 pontos:</strong> Acertou o vencedor e o saldo de gols (ex: apostou 2x1, deu 3x2).</li>
+          <li><strong>3 pontos:</strong> Acertou o empate com saldo errado (ex: apostou 1x1, deu 2x2).</li>
+          <li><strong>2 pontos:</strong> Acertou o placar do perdedor (ex: apostou 2x1, deu 3x1).</li>
           <li><strong>1 ponto:</strong> Acertou apenas quem venceu a partida.</li>
         </ul>
       </div>

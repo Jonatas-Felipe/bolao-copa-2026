@@ -83,3 +83,11 @@ export interface RankingEntry {
   name: string;
   points: number;
 }
+
+export interface MatchGuessEntry {
+  id: string;
+  userName: string;
+  homeScore: number;
+  awayScore: number;
+  points: number;
+}

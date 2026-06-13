@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { MatchAPI, MatchesResponse, Match, Team, GroupStanding, RankingEntry } from '../types';
+import { translateTeamName } from '../lib/teamNames';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3002/api',
@@ -36,8 +37,8 @@ api.interceptors.response.use(
 export function normalizeMatch(m: MatchAPI): Match {
   return {
     id: m.id,
-    homeTeam: m.homeTeamName,
-    awayTeam: m.awayTeamName,
+    homeTeam: translateTeamName(m.homeTeamName),
+    awayTeam: translateTeamName(m.awayTeamName),
     homeFlag: m.homeFlag,
     awayFlag: m.awayFlag,
     date: new Date(m.date),
@@ -123,6 +124,17 @@ export const submitGuess = (matchId: string, homeScore: number, awayScore: numbe
   api.post<GuessResponse>('/guesses', { matchId, homeScore, awayScore });
 
 export const fetchMyGuesses = () => api.get<GuessResponse[]>('/guesses/me');
+
+export interface MatchGuessEntry {
+  id: string;
+  userName: string;
+  homeScore: number;
+  awayScore: number;
+  points: number;
+}
+
+export const fetchMatchGuesses = (matchId: string) =>
+  api.get<MatchGuessEntry[]>(`/guesses/match/${encodeURIComponent(matchId)}`);
 
 // ─── Ranking ─────────────────────────────────────────────────────────────────
 

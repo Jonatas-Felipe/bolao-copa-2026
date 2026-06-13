@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { differenceInMinutes, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Lock, Check } from 'lucide-react';
-import { Match, Guess } from '../types';
+import { Lock, Check, Users, X, Trophy } from 'lucide-react';
+import { Match, Guess, MatchGuessEntry } from '../types';
 import { cn } from '../lib/utils';
-import { submitGuess } from '../services/api';
+import { submitGuess, fetchMatchGuesses } from '../services/api';
 
 interface MatchCardProps {
   match: Match;
@@ -27,6 +27,9 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [showGuesses, setShowGuesses] = useState(false);
+  const [matchGuesses, setMatchGuesses] = useState<MatchGuessEntry[]>([]);
+  const [loadingGuesses, setLoadingGuesses] = useState(false);
 
   const timeDiff = differenceInMinutes(match.date, new Date());
   
@@ -57,6 +60,26 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
   };
 
   const isChanged = homeScore !== guess?.homeScore || awayScore !== guess?.awayScore;
+
+  // Palpites dos outros ficam visíveis quando o jogo está bloqueado ou encerrado
+  const canViewGuesses = isLocked;
+
+  const handleViewGuesses = async () => {
+    if (showGuesses) {
+      setShowGuesses(false);
+      return;
+    }
+    setLoadingGuesses(true);
+    try {
+      const { data } = await fetchMatchGuesses(match.id);
+      setMatchGuesses(data);
+      setShowGuesses(true);
+    } catch {
+      // 403 = jogo não começou ainda
+    } finally {
+      setLoadingGuesses(false);
+    }
+  };
 
   const phaseLabel = match.type === 'group'
     ? `Grupo ${match.group}`
@@ -163,6 +186,138 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
       {match.finished && match.homeScore !== null && (
         <div className="bg-gray-50 border-t border-gray-100 p-3 text-center text-sm">
           Placar oficial: <strong className="font-semibold text-gray-800">{match.homeTeam} {match.homeScore} x {match.awayScore} {match.awayTeam}</strong>
+        </div>
+      )}
+
+      {/* View others' guesses button */}
+      {canViewGuesses && (
+        <div className="border-t border-gray-100">
+          <button
+            onClick={handleViewGuesses}
+            disabled={loadingGuesses}
+            className="w-full p-3 text-sm text-br-blue hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 font-medium"
+          >
+            {loadingGuesses ? (
+              <div className="w-4 h-4 border-2 border-br-blue/30 border-t-br-blue rounded-full animate-spin" />
+            ) : (
+              <Users className="w-4 h-4" />
+            )}
+            Ver palpites dos participantes
+          </button>
+        </div>
+      )}
+
+      {/* Modal de palpites dos participantes */}
+      {showGuesses && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowGuesses(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-br-blue p-5 text-white">
+              <button
+                onClick={() => setShowGuesses(false)}
+                className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/20 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <img src={match.homeFlag} alt={match.homeTeam} className="w-8 h-5 object-contain" />
+                  <span className="font-bold text-sm">{match.homeTeam}</span>
+                </div>
+                {match.finished && match.homeScore !== null ? (
+                  <span className="font-bold text-lg">{match.homeScore} x {match.awayScore}</span>
+                ) : (
+                  <span className="text-white/70 text-sm">vs</span>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm">{match.awayTeam}</span>
+                  <img src={match.awayFlag} alt={match.awayTeam} className="w-8 h-5 object-contain" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-white/80 text-xs">
+                <Users className="w-3.5 h-3.5" />
+                <span>Palpites dos participantes</span>
+                {match.timeElapsed !== 'finished' && match.timeElapsed !== 'notstarted' && (
+                  <span className="ml-auto bg-white/20 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
+                    Ao vivo • {match.timeElapsed}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {matchGuesses.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                  <p className="font-medium">Nenhum palpite ainda</p>
+                  <p className="text-sm mt-1">Ninguém fez palpite neste jogo.</p>
+                </div>
+              ) : (
+                matchGuesses.map((g, index) => (
+                  <div
+                    key={g.id}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border transition-colors",
+                      index === 0 && match.finished && g.points >= 5
+                        ? "bg-yellow-50 border-yellow-200"
+                        : "bg-gray-50 border-gray-100"
+                    )}
+                  >
+                    {/* Position */}
+                    <div className="w-7 text-center shrink-0">
+                      {match.finished && index === 0 && g.points >= 5 ? (
+                        <Trophy className="w-5 h-5 text-yellow-500 mx-auto" />
+                      ) : (
+                        <span className="text-xs font-bold text-gray-400">{index + 1}º</span>
+                      )}
+                    </div>
+
+                    {/* Avatar */}
+                    <div className="w-8 h-8 rounded-full bg-br-blue/10 flex items-center justify-center text-br-blue font-bold text-xs shrink-0">
+                      {g.userName.substring(0, 2).toUpperCase()}
+                    </div>
+
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-gray-800 text-sm truncate block">{g.userName}</span>
+                    </div>
+
+                    {/* Guess score */}
+                    <div className="text-center shrink-0">
+                      <span className="font-bold text-gray-700 text-sm">{g.homeScore} x {g.awayScore}</span>
+                    </div>
+
+                    {/* Points - always show */}
+                    <div className={cn(
+                      "shrink-0 text-xs font-bold px-2.5 py-1 rounded-full",
+                      g.points >= 7 ? "bg-green-100 text-green-700" :
+                      g.points >= 5 ? "bg-emerald-100 text-emerald-700" :
+                      g.points >= 3 ? "bg-yellow-100 text-yellow-700" :
+                      g.points >= 1 ? "bg-orange-100 text-orange-700" :
+                      "bg-red-100 text-red-600"
+                    )}>
+                      {g.points} pts
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Modal Footer - Scoring Legend */}
+            {match.finished && matchGuesses.length > 0 && (
+              <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 justify-center">
+                  <span><strong className="text-green-600">7</strong> exato</span>
+                  <span><strong className="text-emerald-600">5</strong> vencedor+saldo</span>
+                  <span><strong className="text-yellow-600">3</strong> empate</span>
+                  <span><strong className="text-orange-600">2</strong> placar perdedor</span>
+                  <span><strong className="text-gray-600">1</strong> vencedor</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
