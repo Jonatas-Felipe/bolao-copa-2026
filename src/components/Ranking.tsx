@@ -58,6 +58,10 @@ export default function Ranking({ userId }: RankingProps) {
         <ul className="divide-y divide-gray-100">
           {ranking.map((entry, index) => {
             const isMe = entry.id === userId;
+            // Mesma pontuação = mesma posição
+            const position = index === 0 || ranking[index - 1].points !== entry.points
+              ? index + 1
+              : ranking.findIndex(e => e.points === entry.points) + 1;
             
             return (
               <li 
@@ -69,14 +73,14 @@ export default function Ranking({ userId }: RankingProps) {
               >
                 {/* Position Marker */}
                 <div className="w-8 flex justify-center items-center">
-                  {index === 0 ? (
+                  {position === 1 ? (
                     <Medal className="w-7 h-7 text-yellow-400 drop-shadow-sm" />
-                  ) : index === 1 ? (
+                  ) : position === 2 ? (
                     <Medal className="w-6 h-6 text-gray-400 drop-shadow-sm" />
-                  ) : index === 2 ? (
+                  ) : position === 3 ? (
                     <Medal className="w-6 h-6 text-amber-600 drop-shadow-sm" />
                   ) : (
-                    <span className="font-bold text-gray-400">{index + 1}º</span>
+                    <span className="font-bold text-gray-400">{position}º</span>
                   )}
                 </div>
 
