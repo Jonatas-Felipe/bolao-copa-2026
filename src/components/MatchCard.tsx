@@ -311,6 +311,7 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 justify-center">
                   <span><strong className="text-green-600">7</strong> exato</span>
                   <span><strong className="text-emerald-600">5</strong> vencedor+saldo</span>
+                  <span><strong className="text-teal-600">4</strong> placar vencedor</span>
                   <span><strong className="text-yellow-600">3</strong> empate</span>
                   <span><strong className="text-orange-600">2</strong> placar perdedor</span>
                   <span><strong className="text-gray-600">1</strong> vencedor</span>

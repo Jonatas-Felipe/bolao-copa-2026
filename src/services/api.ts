@@ -141,4 +141,7 @@ export const fetchMatchGuesses = (matchId: string) =>
 export const fetchRanking = () =>
   api.get<RankingEntry[]>('/ranking');
 
+export const recalculateRanking = () =>
+  api.post<{ recalculated: number }>('/ranking/recalculate');
+
 export default api;
