@@ -18,6 +18,7 @@ const teamNamesPtBR: Record<string, string> = {
   "China PR": "China",
   "Colombia": "Colômbia",
   "Congo DR": "RD Congo",
+  "Democratic Republic of the Congo": "RD Congo",
   "Costa Rica": "Costa Rica",
   "Croatia": "Croácia",
   "Czech Republic": "República Tcheca",
