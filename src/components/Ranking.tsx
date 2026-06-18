@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Medal, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Trophy, Medal } from 'lucide-react';
 import { fetchRanking } from '../services/api';
 import { RankingEntry } from '../types';
 import { cn } from '../lib/utils';
@@ -122,11 +122,12 @@ export default function Ranking({ userId }: RankingProps) {
         </h3>
         <ul className="text-sm text-white/80 space-y-2 list-disc list-inside">
           <li><strong>7 pontos:</strong> Placar exato (ex: apostou 2x1 e deu 2x1).</li>
-          <li><strong>5 pontos:</strong> Acertou o vencedor e o saldo de gols (ex: apostou 2x1, deu 3x2).</li>
-          <li><strong>4 pontos:</strong> Acertou o placar do vencedor (ex: apostou 2x1, deu 2x0).</li>
-          <li><strong>3 pontos:</strong> Acertou o empate com saldo errado (ex: apostou 1x1, deu 2x2).</li>
-          <li><strong>2 pontos:</strong> Acertou o placar do perdedor (ex: apostou 2x1, deu 3x1).</li>
-          <li><strong>1 ponto:</strong> Acertou apenas quem venceu a partida.</li>
+          <li><strong>6 pontos:</strong> Acertou vencedor e saldo de gols (ex: apostou 2x1, deu 3x2).</li>
+          <li><strong>5 pontos:</strong> Acertou o placar do vencedor (ex: apostou 2x1, deu 2x0).</li>
+          <li><strong>4 pontos:</strong> Acertou empate não exato (ex: apostou 1x1, deu 2x2).</li>
+          <li><strong>3 pontos:</strong> Acertou o placar do perdedor (ex: apostou 2x1, deu 3x1).</li>
+          <li><strong>2 pontos:</strong> Acertou apenas quem venceu a partida.</li>
+          <li><strong>1 ponto:</strong> Palpite de empate quando o jogo teve vencedor.</li>
         </ul>
       </div>
     </div>

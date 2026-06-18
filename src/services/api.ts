@@ -100,6 +100,27 @@ export const fetchMatches = async (params?: FetchMatchesParams): Promise<FetchMa
   };
 };
 
+/**
+ * Carrega todas as páginas de jogos.
+ * Mantém os nomes já normalizados via tradutor para compatibilidade.
+ */
+export const fetchAllMatches = async (
+  params?: Omit<FetchMatchesParams, 'page'>
+): Promise<Match[]> => {
+  const allMatches: Match[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const result = await fetchMatches({ ...params, page });
+    allMatches.push(...result.matches);
+    totalPages = result.totalPages;
+    page += 1;
+  } while (page <= totalPages);
+
+  return allMatches;
+};
+
 export const syncMatches = () => api.post<{ created: number; updated: number }>('/matches/sync');
 
 // ─── Teams ───────────────────────────────────────────────────────────────────

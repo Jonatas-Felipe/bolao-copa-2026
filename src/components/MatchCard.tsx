@@ -14,7 +14,7 @@ interface MatchCardProps {
 
 const typeLabels: Record<string, string> = {
   group: 'Fase de Grupos',
-  round_of_32: 'Oitavas',
+  round_of_32: '16 avos',
   round_of_16: 'Oitavas',
   quarter: 'Quartas',
   semi: 'Semifinal',
@@ -32,6 +32,7 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
   const [loadingGuesses, setLoadingGuesses] = useState(false);
 
   const timeDiff = differenceInMinutes(match.date, new Date());
+  const hasStarted = new Date() >= match.date;
   
   // Regra: bloqueia palpites faltando 30 minutos ou jogo finalizado
   const isLocked = timeDiff < 30 || match.finished;
@@ -61,8 +62,8 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
 
   const isChanged = homeScore !== guess?.homeScore || awayScore !== guess?.awayScore;
 
-  // Palpites dos outros ficam visíveis quando o jogo está bloqueado ou encerrado
-  const canViewGuesses = isLocked;
+  // Palpites dos outros ficam visíveis após o início do jogo.
+  const canViewGuesses = hasStarted || match.finished;
 
   const handleViewGuesses = async () => {
     if (showGuesses) {
@@ -70,12 +71,15 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
       return;
     }
     setLoadingGuesses(true);
+    setError('');
     try {
       const { data } = await fetchMatchGuesses(match.id);
       setMatchGuesses(data);
       setShowGuesses(true);
-    } catch {
-      // 403 = jogo não começou ainda
+    } catch (err: any) {
+      const msg = err.response?.data?.message;
+      setError(msg || 'Palpites ainda não disponíveis para esta partida.');
+      setTimeout(() => setError(''), 3000);
     } finally {
       setLoadingGuesses(false);
     }
@@ -310,11 +314,12 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
               <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 justify-center">
                   <span><strong className="text-green-600">7</strong> exato</span>
-                  <span><strong className="text-emerald-600">5</strong> vencedor+saldo</span>
-                  <span><strong className="text-teal-600">4</strong> placar vencedor</span>
-                  <span><strong className="text-yellow-600">3</strong> empate</span>
-                  <span><strong className="text-orange-600">2</strong> placar perdedor</span>
-                  <span><strong className="text-gray-600">1</strong> vencedor</span>
+                  <span><strong className="text-emerald-600">6</strong> vencedor+saldo</span>
+                  <span><strong className="text-teal-600">5</strong> placar vencedor</span>
+                  <span><strong className="text-yellow-600">4</strong> empate não exato</span>
+                  <span><strong className="text-orange-600">3</strong> placar perdedor</span>
+                  <span><strong className="text-amber-600">2</strong> só vencedor</span>
+                  <span><strong className="text-gray-600">1</strong> palpite empate</span>
                 </div>
               </div>
             )}

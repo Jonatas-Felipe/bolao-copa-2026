@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import MatchCard from './MatchCard';
 import { Match, Guess } from '../types';
-import { fetchMatches, fetchMyGuesses } from '../services/api';
+import { fetchAllMatches, fetchMyGuesses } from '../services/api';
 
 interface DashboardProps {
   userId: string;
@@ -20,11 +20,11 @@ export default function Dashboard({ userId }: DashboardProps) {
       setLoading(true);
       setError('');
       try {
-        const [matchesResult, guessesRes] = await Promise.all([
-          fetchMatches({ limit: 200 }),
+        const [allMatches, guessesRes] = await Promise.all([
+          fetchAllMatches({ limit: 50 }),
           fetchMyGuesses(),
         ]);
-        setMatches(matchesResult.matches);
+        setMatches(allMatches);
         setGuesses(
           guessesRes.data.map((g) => ({
             matchId: g.matchId,
