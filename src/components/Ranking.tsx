@@ -3,6 +3,11 @@ import { Trophy, Medal } from 'lucide-react';
 import { fetchRanking } from '../services/api';
 import { RankingEntry } from '../types';
 import { cn } from '../lib/utils';
+import {
+  connectRealtime,
+  disconnectRealtime,
+  subscribeRankingUpdated,
+} from '../services/realtime';
 
 interface RankingProps {
   userId: string;
@@ -13,20 +18,34 @@ export default function Ranking({ userId }: RankingProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    async function loadRanking() {
-      setLoading(true);
-      setError('');
-      try {
-        const { data } = await fetchRanking();
-        setRanking(data);
-      } catch {
-        setError('Erro ao carregar ranking.');
-      } finally {
-        setLoading(false);
-      }
+  const loadRanking = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await fetchRanking();
+      setRanking(data);
+    } catch {
+      setError('Erro ao carregar ranking.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadRanking();
+  }, []);
+
+  useEffect(() => {
+    connectRealtime();
+
+    const unsubscribe = subscribeRankingUpdated(() => {
+      loadRanking();
+    });
+
+    return () => {
+      unsubscribe();
+      disconnectRealtime();
+    };
   }, []);
 
   return (

@@ -4,6 +4,11 @@ import { ptBR } from 'date-fns/locale';
 import MatchCard from './MatchCard';
 import { Match, Guess } from '../types';
 import { fetchAllMatches, fetchMyGuesses } from '../services/api';
+import {
+  connectRealtime,
+  disconnectRealtime,
+  subscribeMatchesUpdated,
+} from '../services/realtime';
 
 interface DashboardProps {
   userId: string;
@@ -14,6 +19,17 @@ export default function Dashboard({ userId }: DashboardProps) {
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+
+  const refetchMatches = async () => {
+    try {
+      const allMatches = await fetchAllMatches({ limit: 50 });
+      setMatches(allMatches);
+      setNow(Date.now());
+    } catch {
+      setError('Erro ao atualizar jogos em tempo real.');
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -39,6 +55,27 @@ export default function Dashboard({ userId }: DashboardProps) {
       }
     }
     loadData();
+  }, []);
+
+  useEffect(() => {
+    connectRealtime();
+
+    const unsubscribe = subscribeMatchesUpdated(() => {
+      refetchMatches();
+    });
+
+    return () => {
+      unsubscribe();
+      disconnectRealtime();
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, 15000);
+
+    return () => window.clearInterval(timer);
   }, []);
 
   const handleSaveGuess = (guess: Guess) => {
@@ -110,6 +147,7 @@ export default function Dashboard({ userId }: DashboardProps) {
                       match={match} 
                       guess={guess}
                       onSaveGuess={handleSaveGuess}
+                      now={now}
                     />
                   );
                 })}

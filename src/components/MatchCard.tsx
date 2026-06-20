@@ -10,6 +10,7 @@ interface MatchCardProps {
   match: Match;
   guess?: Guess;
   onSaveGuess: (guess: Guess) => void;
+  now: number;
 }
 
 const typeLabels: Record<string, string> = {
@@ -21,7 +22,7 @@ const typeLabels: Record<string, string> = {
   final: 'Final',
 };
 
-export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps) {
+export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardProps) {
   const [homeScore, setHomeScore] = useState<number | ''>(guess?.homeScore ?? '');
   const [awayScore, setAwayScore] = useState<number | ''>(guess?.awayScore ?? '');
   const [isSaving, setIsSaving] = useState(false);
@@ -31,8 +32,9 @@ export default function MatchCard({ match, guess, onSaveGuess }: MatchCardProps)
   const [matchGuesses, setMatchGuesses] = useState<MatchGuessEntry[]>([]);
   const [loadingGuesses, setLoadingGuesses] = useState(false);
 
-  const timeDiff = differenceInMinutes(match.date, new Date());
-  const hasStarted = new Date() >= match.date;
+  const currentDate = new Date(now);
+  const timeDiff = differenceInMinutes(match.date, currentDate);
+  const hasStarted = currentDate >= match.date;
   
   // Regra: bloqueia palpites faltando 30 minutos ou jogo finalizado
   const isLocked = timeDiff < 30 || match.finished;
