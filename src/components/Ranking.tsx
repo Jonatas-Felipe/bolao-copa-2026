@@ -31,6 +31,8 @@ export default function Ranking({ userId }: RankingProps) {
     }
   };
 
+  const formatPoints = (value: number) => value.toLocaleString('pt-BR');
+
   useEffect(() => {
     loadRanking();
   }, []);
@@ -124,7 +126,7 @@ export default function Ranking({ userId }: RankingProps) {
                 {/* Points */}
                 <div className="text-right">
                   <div className="text-lg font-bold text-gray-900">
-                    {entry.points} <span className="text-sm font-medium text-gray-500">pts</span>
+                    {formatPoints(entry.points)} <span className="text-sm font-medium text-gray-500">pts</span>
                   </div>
                 </div>
               </li>
@@ -140,13 +142,14 @@ export default function Ranking({ userId }: RankingProps) {
           Como funciona a pontuação?
         </h3>
         <ul className="text-sm text-white/80 space-y-2 list-disc list-inside">
-          <li><strong>7 pontos:</strong> Placar exato (ex: apostou 2x1 e deu 2x1).</li>
-          <li><strong>6 pontos:</strong> Acertou vencedor e saldo de gols (ex: apostou 2x1, deu 3x2).</li>
-          <li><strong>5 pontos:</strong> Acertou o placar do vencedor (ex: apostou 2x1, deu 2x0).</li>
-          <li><strong>4 pontos:</strong> Acertou empate não exato (ex: apostou 1x1, deu 2x2).</li>
-          <li><strong>3 pontos:</strong> Acertou o placar do perdedor (ex: apostou 2x1, deu 3x1).</li>
-          <li><strong>2 pontos:</strong> Acertou apenas quem venceu a partida.</li>
-          <li><strong>1 ponto:</strong> Palpite de empate quando o jogo teve vencedor.</li>
+          <li><strong>25 pontos base:</strong> Placar exato (ex: apostou 2x1 e deu 2x1).</li>
+          <li><strong>18 pontos base:</strong> Acertou o placar do vencedor (ex: apostou 2x1, deu 2x0).</li>
+          <li><strong>15 pontos base:</strong> Acertou vencedor e saldo de gols (ex: apostou 2x1, deu 3x2).</li>
+          <li><strong>12 pontos base:</strong> Acertou o placar do perdedor (ex: apostou 2x1, deu 3x1).</li>
+          <li><strong>11 pontos base:</strong> Acertou empate não exato (ex: apostou 1x1, deu 2x2).</li>
+          <li><strong>10 pontos base:</strong> Acertou apenas quem venceu a partida.</li>
+          <li><strong>4 pontos base:</strong> Palpite de empate quando o jogo teve vencedor.</li>
+          <li><strong>Peso do jogo:</strong> total final = pontos base x weight (campo do jogo).</li>
         </ul>
       </div>
     </div>

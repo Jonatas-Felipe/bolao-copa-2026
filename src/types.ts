@@ -19,6 +19,7 @@ export interface MatchAPI {
   finished: boolean;
   timeElapsed: string; // "finished" | "notstarted" | "45'" etc.
   type: string; // "group" | "round_of_32" | "round_of_16" | "quarter" | "semi" | "final"
+  weight: number;
 }
 
 // Resposta paginada de GET /api/matches
@@ -43,6 +44,7 @@ export interface Match {
   awayScore: number | null;
   group: string;
   type: string;
+  weight: number;
 }
 
 export interface Team {

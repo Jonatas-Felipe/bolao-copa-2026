@@ -1,10 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { differenceInMinutes, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Lock, Check, Users, X, Trophy } from 'lucide-react';
 import { Match, Guess, MatchGuessEntry } from '../types';
 import { cn } from '../lib/utils';
 import { submitGuess, fetchMatchGuesses } from '../services/api';
+import {
+  connectRealtime,
+  disconnectRealtime,
+  subscribeGuessCreated,
+} from '../services/realtime';
 
 interface MatchCardProps {
   match: Match;
@@ -67,6 +72,7 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
 
   // Palpites dos outros ficam visíveis após o início do jogo.
   const canViewGuesses = hasStarted || isFinished;
+  const formatPoints = (value: number) => value.toLocaleString('pt-BR');
 
   const handleViewGuesses = async () => {
     if (showGuesses) {
@@ -88,6 +94,32 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
     }
   };
 
+  useEffect(() => {
+    if (!showGuesses) {
+      return;
+    }
+
+    connectRealtime();
+
+    const unsubscribe = subscribeGuessCreated(async ({ matchId }) => {
+      if (matchId !== match.id) {
+        return;
+      }
+
+      try {
+        const { data } = await fetchMatchGuesses(match.id);
+        setMatchGuesses(data);
+      } catch {
+        // Ignora falhas transitórias durante atualização em tempo real.
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      disconnectRealtime();
+    };
+  }, [showGuesses, match.id]);
+
   const phaseLabel = match.type === 'group'
     ? `Grupo ${match.group}`
     : typeLabels[match.type] || match.type;
@@ -98,19 +130,24 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
           {format(match.date, "HH:mm", { locale: ptBR })} • {phaseLabel}
         </span>
-        {isFinished ? (
-          <span className="text-xs font-semibold px-2 py-1 bg-gray-200 text-gray-700 rounded-md">
-            Encerrado
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold px-2 py-1 bg-amber-100 text-amber-700 rounded-md">
+            x{match.weight}
           </span>
-        ) : isLocked ? (
-          <span className="text-xs font-semibold px-2 py-1 bg-red-100 text-red-700 rounded-md flex items-center gap-1">
-            <Lock className="w-3 h-3" /> Bloqueado
-          </span>
-        ) : (
-          <span className="text-xs font-semibold px-2 py-1 bg-br-green/10 text-br-green rounded-md">
-            Aberto
-          </span>
-        )}
+          {isFinished ? (
+            <span className="text-xs font-semibold px-2 py-1 bg-gray-200 text-gray-700 rounded-md">
+              Encerrado
+            </span>
+          ) : isLocked ? (
+            <span className="text-xs font-semibold px-2 py-1 bg-red-100 text-red-700 rounded-md flex items-center gap-1">
+              <Lock className="w-3 h-3" /> Bloqueado
+            </span>
+          ) : (
+            <span className="text-xs font-semibold px-2 py-1 bg-br-green/10 text-br-green rounded-md">
+              Aberto
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 justify-between">
@@ -299,13 +336,13 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
                     {/* Points - always show */}
                     <div className={cn(
                       "shrink-0 text-xs font-bold px-2.5 py-1 rounded-full",
-                      g.points >= 7 ? "bg-green-100 text-green-700" :
-                      g.points >= 5 ? "bg-emerald-100 text-emerald-700" :
-                      g.points >= 3 ? "bg-yellow-100 text-yellow-700" :
-                      g.points >= 1 ? "bg-orange-100 text-orange-700" :
+                      g.points >= 250 ? "bg-green-100 text-green-700" :
+                      g.points >= 150 ? "bg-emerald-100 text-emerald-700" :
+                      g.points >= 100 ? "bg-yellow-100 text-yellow-700" :
+                      g.points >= 40 ? "bg-orange-100 text-orange-700" :
                       "bg-red-100 text-red-600"
                     )}>
-                      {g.points} pts
+                      {formatPoints(g.points)} pts
                     </div>
                   </div>
                 ))
@@ -316,13 +353,16 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
             {isFinished && matchGuesses.length > 0 && (
               <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 justify-center">
-                  <span><strong className="text-green-600">7</strong> exato</span>
-                  <span><strong className="text-emerald-600">6</strong> vencedor+saldo</span>
-                  <span><strong className="text-teal-600">5</strong> placar vencedor</span>
-                  <span><strong className="text-yellow-600">4</strong> empate não exato</span>
-                  <span><strong className="text-orange-600">3</strong> placar perdedor</span>
-                  <span><strong className="text-amber-600">2</strong> só vencedor</span>
-                  <span><strong className="text-gray-600">1</strong> palpite empate</span>
+                  <span><strong className="text-green-600">25</strong> exato</span>
+                  <span><strong className="text-emerald-600">18</strong> placar vencedor</span>
+                  <span><strong className="text-teal-600">15</strong> vencedor+saldo</span>
+                  <span><strong className="text-yellow-600">12</strong> placar perdedor</span>
+                  <span><strong className="text-orange-600">11</strong> empate não exato</span>
+                  <span><strong className="text-amber-600">10</strong> só vencedor</span>
+                  <span><strong className="text-gray-600">4</strong> palpite empate</span>
+                </div>
+                <div className="mt-2 text-center text-[10px] text-gray-500">
+                  Pontuação final = pontos base x peso do jogo ({match.weight}).
                 </div>
               </div>
             )}

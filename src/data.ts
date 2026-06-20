@@ -17,6 +17,7 @@ export const mockMatches: Match[] = [
     awayScore: null,
     group: 'A',
     type: 'group',
+    weight: 10,
   },
   {
     id: '2',
@@ -31,6 +32,7 @@ export const mockMatches: Match[] = [
     awayScore: null,
     group: 'B',
     type: 'group',
+    weight: 14,
   },
   {
     id: '3',
@@ -45,6 +47,7 @@ export const mockMatches: Match[] = [
     awayScore: null,
     group: 'C',
     type: 'group',
+    weight: 18,
   },
   {
     id: '4',
@@ -59,6 +62,7 @@ export const mockMatches: Match[] = [
     awayScore: 2,
     group: 'D',
     type: 'group',
+    weight: 12,
   },
 ];
 
