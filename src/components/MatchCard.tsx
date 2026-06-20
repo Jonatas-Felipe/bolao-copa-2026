@@ -35,9 +35,10 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
   const currentDate = new Date(now);
   const timeDiff = differenceInMinutes(match.date, currentDate);
   const hasStarted = currentDate >= match.date;
+  const isFinished = match.finished && match.timeElapsed === 'finished';
   
   // Regra: bloqueia palpites faltando 30 minutos ou jogo finalizado
-  const isLocked = timeDiff < 30 || match.finished;
+  const isLocked = timeDiff < 30 || isFinished;
   
   const handleSave = async () => {
     if (homeScore === '' || awayScore === '') return;
@@ -65,7 +66,7 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
   const isChanged = homeScore !== guess?.homeScore || awayScore !== guess?.awayScore;
 
   // Palpites dos outros ficam visíveis após o início do jogo.
-  const canViewGuesses = hasStarted || match.finished;
+  const canViewGuesses = hasStarted || isFinished;
 
   const handleViewGuesses = async () => {
     if (showGuesses) {
@@ -97,7 +98,7 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
           {format(match.date, "HH:mm", { locale: ptBR })} • {phaseLabel}
         </span>
-        {match.finished ? (
+        {isFinished ? (
           <span className="text-xs font-semibold px-2 py-1 bg-gray-200 text-gray-700 rounded-md">
             Encerrado
           </span>
@@ -189,7 +190,7 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
       </div>
 
       {/* Official Score Display for finished matches */}
-      {match.finished && match.homeScore !== null && (
+      {isFinished && match.homeScore !== null && (
         <div className="bg-gray-50 border-t border-gray-100 p-3 text-center text-sm">
           Placar oficial: <strong className="font-semibold text-gray-800">{match.homeTeam} {match.homeScore} x {match.awayScore} {match.awayTeam}</strong>
         </div>
@@ -231,7 +232,7 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
                   <img src={match.homeFlag} alt={match.homeTeam} className="w-8 h-5 object-contain" />
                   <span className="font-bold text-sm">{match.homeTeam}</span>
                 </div>
-                {match.finished && match.homeScore !== null ? (
+                {isFinished && match.homeScore !== null ? (
                   <span className="font-bold text-lg">{match.homeScore} x {match.awayScore}</span>
                 ) : (
                   <span className="text-white/70 text-sm">vs</span>
@@ -266,14 +267,14 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
                     key={g.id}
                     className={cn(
                       "flex items-center gap-3 p-3 rounded-xl border transition-colors",
-                      index === 0 && match.finished && g.points >= 5
+                      index === 0 && isFinished && g.points >= 5
                         ? "bg-yellow-50 border-yellow-200"
                         : "bg-gray-50 border-gray-100"
                     )}
                   >
                     {/* Position */}
                     <div className="w-7 text-center shrink-0">
-                      {match.finished && index === 0 && g.points >= 5 ? (
+                      {isFinished && index === 0 && g.points >= 5 ? (
                         <Trophy className="w-5 h-5 text-yellow-500 mx-auto" />
                       ) : (
                         <span className="text-xs font-bold text-gray-400">{index + 1}º</span>
@@ -312,7 +313,7 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
             </div>
 
             {/* Modal Footer - Scoring Legend */}
-            {match.finished && matchGuesses.length > 0 && (
+            {isFinished && matchGuesses.length > 0 && (
               <div className="border-t border-gray-100 px-4 py-3 bg-gray-50">
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-500 justify-center">
                   <span><strong className="text-green-600">7</strong> exato</span>
