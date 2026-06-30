@@ -16,6 +16,7 @@ interface MatchCardProps {
   guess?: Guess;
   onSaveGuess: (guess: Guess) => void;
   now: number;
+  badge?: 'live' | 'next';
 }
 
 const typeLabels: Record<string, string> = {
@@ -27,7 +28,7 @@ const typeLabels: Record<string, string> = {
   final: 'Final',
 };
 
-export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardProps) {
+export default function MatchCard({ match, guess, onSaveGuess, now, badge }: MatchCardProps) {
   const [homeScore, setHomeScore] = useState<number | ''>(guess?.homeScore ?? '');
   const [awayScore, setAwayScore] = useState<number | ''>(guess?.awayScore ?? '');
   const [isSaving, setIsSaving] = useState(false);
@@ -125,7 +126,20 @@ export default function MatchCard({ match, guess, onSaveGuess, now }: MatchCardP
     : typeLabels[match.type] || match.type;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-shadow hover:shadow-md">
+    <div className={cn(
+      "bg-white rounded-2xl shadow-sm border overflow-hidden transition-shadow hover:shadow-md",
+      badge === 'live' ? "border-red-400 ring-2 ring-red-100" : "border-gray-100"
+    )}>
+      {badge === 'live' && (
+        <div className="bg-red-500 text-white text-center text-xs font-bold py-1.5 animate-pulse">
+          🔴 AO VIVO
+        </div>
+      )}
+      {badge === 'next' && (
+        <div className="bg-br-blue text-white text-center text-xs font-bold py-1.5">
+          ▶ PRÓXIMO JOGO
+        </div>
+      )}
       <div className="bg-gray-50 px-4 py-2 flex items-center justify-between border-b border-gray-100">
         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
           {format(match.date, "HH:mm", { locale: ptBR })} • {phaseLabel}

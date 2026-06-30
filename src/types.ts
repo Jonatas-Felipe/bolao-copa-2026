@@ -43,6 +43,7 @@ export interface Match {
   homeScore: number | null;
   awayScore: number | null;
   group: string;
+  matchday: number;
   type: string;
   weight: number;
 }

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Target } from 'lucide-react';
 import MatchCard from './MatchCard';
 import { Match, Guess } from '../types';
 import { fetchAllMatches, fetchMyGuesses } from '../services/api';
@@ -78,6 +79,50 @@ export default function Dashboard({ userId }: DashboardProps) {
     return () => window.clearInterval(timer);
   }, []);
 
+  // ── Auto-scroll para jogo ao vivo / próximo ──────────────────────────────────────────────
+
+  const targetMatch = useMemo(() => {
+    if (matches.length === 0) return null;
+
+    // 1. Jogo ao vivo
+    const liveMatch = matches.find(m => !m.finished && m.timeElapsed !== 'notstarted');
+    if (liveMatch) return { match: liveMatch, type: 'live' as const };
+
+    // 2. Próximo jogo (data mais próxima)
+    const upcoming = matches
+      .filter(m => !m.finished && m.timeElapsed === 'notstarted')
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    if (upcoming.length > 0) return { match: upcoming[0], type: 'next' as const };
+
+    // 3. Último jogo finalizado
+    const finished = matches
+      .filter(m => m.finished)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+    if (finished.length > 0) return { match: finished[0], type: 'last' as const };
+
+    return null;
+  }, [matches]);
+
+  const initialScrollDone = useRef(false);
+
+  useEffect(() => {
+    if (!targetMatch || loading || initialScrollDone.current) return;
+    initialScrollDone.current = true;
+
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-match-id="${targetMatch.match.id}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [targetMatch, loading]);
+
+  const handleScrollToTarget = () => {
+    if (!targetMatch) return;
+    const el = document.querySelector(`[data-match-id="${targetMatch.match.id}"]`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   const handleSaveGuess = (guess: Guess) => {
     setGuesses(prev => {
       const idx = prev.findIndex(g => g.matchId === guess.matchId);
@@ -141,14 +186,19 @@ export default function Dashboard({ userId }: DashboardProps) {
               <div className="space-y-3">
                 {dateMatches.map(match => {
                   const guess = guesses.find(g => g.matchId === match.id);
+                  const badge = targetMatch?.match.id === match.id
+                    ? (targetMatch.type === 'live' ? 'live' as const : targetMatch.type === 'next' ? 'next' as const : undefined)
+                    : undefined;
                   return (
-                    <MatchCard 
-                      key={match.id} 
-                      match={match} 
-                      guess={guess}
-                      onSaveGuess={handleSaveGuess}
-                      now={now}
-                    />
+                    <div key={match.id} data-match-id={match.id}>
+                      <MatchCard 
+                        match={match} 
+                        guess={guess}
+                        onSaveGuess={handleSaveGuess}
+                        now={now}
+                        badge={badge}
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -156,6 +206,16 @@ export default function Dashboard({ userId }: DashboardProps) {
           );
         })}
       </div>
+      )}
+
+      {targetMatch && targetMatch.type !== 'last' && (
+        <button
+          onClick={handleScrollToTarget}
+          className="fixed bottom-6 right-6 z-40 bg-br-green text-white rounded-full w-12 h-12 shadow-lg flex items-center justify-center hover:bg-br-green-dark transition-colors active:scale-95"
+          title={targetMatch.type === 'live' ? 'Ir para jogo ao vivo' : 'Ir para próximo jogo'}
+        >
+          <Target className="w-5 h-5" />
+        </button>
       )}
     </div>
   );

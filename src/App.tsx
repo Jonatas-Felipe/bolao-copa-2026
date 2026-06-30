@@ -2,6 +2,8 @@ import { useState } from 'react';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Ranking from './components/Ranking';
+import GroupStandings from './components/GroupStandings';
+import Bracket from './components/Bracket';
 import Layout from './components/Layout';
 import { User } from './types';
 import { logout } from './services/api';
@@ -11,7 +13,7 @@ export default function App() {
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
-  const [view, setView] = useState<'dashboard' | 'ranking'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'groups' | 'bracket' | 'ranking'>('dashboard');
 
   const handleLogin = (user: User) => {
     setUser(user);
@@ -34,7 +36,11 @@ export default function App() {
 
   return (
     <Layout user={user} view={view} setView={setView} onLogout={handleLogout}>
-      {view === 'dashboard' ? <Dashboard userId={user.id} /> : <Ranking userId={user.id} />}
+      {view === 'dashboard' && <Dashboard userId={user.id} />}
+      {view === 'groups' && <GroupStandings />}
+      {view === 'bracket' && <Bracket />}
+      {view === 'ranking' && <Ranking userId={user.id} />}
     </Layout>
   );
 }
+      

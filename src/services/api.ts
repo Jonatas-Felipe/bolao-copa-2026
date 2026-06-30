@@ -47,6 +47,7 @@ export function normalizeMatch(m: MatchAPI): Match {
     homeScore: m.homeScore != null ? parseInt(m.homeScore) : null,
     awayScore: m.awayScore != null ? parseInt(m.awayScore) : null,
     group: m.group,
+    matchday: parseInt(m.matchday) || 0,
     type: m.type,
     weight: typeof m.weight === 'number' ? m.weight : 1,
   };
