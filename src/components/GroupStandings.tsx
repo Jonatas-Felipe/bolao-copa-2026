@@ -3,7 +3,7 @@ import { fetchGroups, fetchTeams } from '../services/api';
 import { GroupStanding, Team } from '../types';
 import { translateTeamName } from '../lib/teamNames';
 
-export default function GroupStandings() {
+export default function GroupStandings({ onTeamClick }: { onTeamClick: (name: string, flag: string) => void }) {
   const [groups, setGroups] = useState<GroupStanding[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +98,11 @@ export default function GroupStandings() {
                         : 'text-gray-400';
 
                     return (
-                      <tr key={ts.team_id} className={`border-b border-gray-50 ${bgClass}`}>
+                      <tr
+                        key={ts.team_id}
+                        className={`border-b border-gray-50 ${bgClass} cursor-pointer hover:bg-blue-50 transition-colors`}
+                        onClick={() => onTeamClick(name, flag || '')}
+                      >
                         <td className={`px-3 py-2.5 ${posClass}`}>{idx + 1}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2 min-w-0">

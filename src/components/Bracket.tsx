@@ -1,11 +1,10 @@
 import { useState, useEffect, Fragment } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { X, Trophy } from 'lucide-react';
-import { fetchAllMatches, fetchMyGuesses } from '../services/api';
-import { Match, Guess } from '../types';
+import { Trophy } from 'lucide-react';
+import { fetchAllMatches } from '../services/api';
+import { Match } from '../types';
 import { cn } from '../lib/utils';
-import MatchCard from './MatchCard';
 import {
   connectRealtime,
   disconnectRealtime,
@@ -27,11 +26,6 @@ interface Phase {
   type: string;
   name: string;
   matches: Match[];
-}
-
-interface SelectedTeam {
-  name: string;
-  flag: string;
 }
 
 /**
@@ -92,11 +86,10 @@ function reorderForBracket(phases: Phase[]): Phase[] {
   return result;
 }
 
-export default function Bracket() {
+export default function Bracket({ onTeamClick }: { onTeamClick: (name: string, flag: string) => void }) {
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState<SelectedTeam | null>(null);
 
   const loadMatches = async () => {
     try {
@@ -142,8 +135,7 @@ export default function Bracket() {
   });
 
   const handleTeamClick = (teamName: string, teamFlag: string) => {
-    if (!teamName || teamName === 'A definir') return;
-    setSelectedTeam({ name: teamName, flag: teamFlag });
+    onTeamClick(teamName, teamFlag);
   };
 
   // Build bracket sides
@@ -208,13 +200,6 @@ export default function Bracket() {
   const { left: leftPhases, right: rightPhases, finalMatches, thirdPlace } = buildBracket();
   const rightPhasesReversed = [...rightPhases].reverse();
 
-  // Team modal matches
-  const teamMatches = selectedTeam
-    ? allMatches.filter(
-        m => m.homeTeam === selectedTeam.name || m.awayTeam === selectedTeam.name,
-      )
-    : [];
-
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -270,16 +255,6 @@ export default function Bracket() {
           finalMatches={finalMatches}
           thirdPlace={thirdPlace}
           onTeamClick={handleTeamClick}
-        />
-      )}
-
-      {/* Team modal */}
-      {selectedTeam && (
-        <TeamMatchesModal
-          teamName={selectedTeam.name}
-          teamFlag={selectedTeam.flag}
-          matches={teamMatches}
-          onClose={() => setSelectedTeam(null)}
         />
       )}
     </div>
@@ -866,130 +841,6 @@ function MobileBracketCard({
           {format(match.date, "EEEE, d 'de' MMMM 'às' HH:mm", { locale: ptBR })}
         </div>
       )}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TEAM MATCHES MODAL
-// ══════════════════════════════════════════════════════════════════════════════
-
-function TeamMatchesModal({
-  teamName,
-  teamFlag,
-  matches,
-  onClose,
-}: {
-  teamName: string;
-  teamFlag: string;
-  matches: Match[];
-  onClose: () => void;
-}) {
-  const [guesses, setGuesses] = useState<Guess[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    fetchMyGuesses()
-      .then(res => {
-        setGuesses(
-          res.data.map(g => ({
-            matchId: g.matchId,
-            homeScore: g.homeScore,
-            awayScore: g.awayScore,
-          })),
-        );
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 15000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleSaveGuess = (guess: Guess) => {
-    setGuesses(prev => {
-      const idx = prev.findIndex(g => g.matchId === guess.matchId);
-      if (idx !== -1) {
-        const next = [...prev];
-        next[idx] = guess;
-        return next;
-      }
-      return [...prev, guess];
-    });
-  };
-
-  const sortedMatches = [...matches].sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  const phaseLabel = (type: string, group: string) => {
-    const labels: Record<string, string> = {
-      group: 'Fase de Grupos',
-      round_of_32: '32 avos de Final',
-      round_of_16: 'Oitavas de Final',
-      quarter: 'Quartas de Final',
-      semi: 'Semifinal',
-      third_place: 'Disputa de 3º Lugar',
-      final: 'Final',
-    };
-    const label = labels[type] || type;
-    return group && type === 'group' ? `${label} • Grupo ${group}` : label;
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="bg-br-blue p-4 text-white shrink-0">
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-white/20 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-3">
-            {teamFlag && (
-              <img src={teamFlag} alt={teamName} className="w-12 h-8 object-contain drop-shadow" />
-            )}
-            <div>
-              <h3 className="font-display font-bold text-xl">{teamName}</h3>
-              <p className="text-white/70 text-sm">{sortedMatches.length} jogos</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-6 h-6 border-4 border-gray-200 border-t-br-green rounded-full animate-spin" />
-            </div>
-          ) : sortedMatches.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p className="font-medium">Nenhum jogo encontrado</p>
-            </div>
-          ) : (
-            sortedMatches.map(match => {
-              const guess = guesses.find(g => g.matchId === match.id);
-              return (
-                <div key={match.id}>
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">
-                    {phaseLabel(match.type, match.group)}
-                  </div>
-                  <MatchCard
-                    match={match}
-                    guess={guess}
-                    onSaveGuess={handleSaveGuess}
-                    now={now}
-                  />
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
     </div>
   );
 }

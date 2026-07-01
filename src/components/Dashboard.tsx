@@ -13,9 +13,10 @@ import {
 
 interface DashboardProps {
   userId: string;
+  onTeamClick: (name: string, flag: string) => void;
 }
 
-export default function Dashboard({ userId }: DashboardProps) {
+export default function Dashboard({ userId, onTeamClick }: DashboardProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,6 +198,7 @@ export default function Dashboard({ userId }: DashboardProps) {
                         onSaveGuess={handleSaveGuess}
                         now={now}
                         badge={badge}
+                        onTeamClick={onTeamClick}
                       />
                     </div>
                   );

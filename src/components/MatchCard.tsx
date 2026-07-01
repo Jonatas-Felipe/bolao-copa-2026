@@ -17,6 +17,7 @@ interface MatchCardProps {
   onSaveGuess: (guess: Guess) => void;
   now: number;
   badge?: 'live' | 'next';
+  onTeamClick?: (name: string, flag: string) => void;
 }
 
 const typeLabels: Record<string, string> = {
@@ -28,7 +29,7 @@ const typeLabels: Record<string, string> = {
   final: 'Final',
 };
 
-export default function MatchCard({ match, guess, onSaveGuess, now, badge }: MatchCardProps) {
+export default function MatchCard({ match, guess, onSaveGuess, now, badge, onTeamClick }: MatchCardProps) {
   const [homeScore, setHomeScore] = useState<number | ''>(guess?.homeScore ?? '');
   const [awayScore, setAwayScore] = useState<number | ''>(guess?.awayScore ?? '');
   const [isSaving, setIsSaving] = useState(false);
@@ -169,10 +170,14 @@ export default function MatchCard({ match, guess, onSaveGuess, now, badge }: Mat
         {/* Teams and Inputs */}
         <div className="flex-1 w-full flex items-center justify-between sm:justify-center gap-2 sm:gap-6">
           {/* Home Team */}
-          <div className="flex flex-col items-center gap-2 flex-1 sm:flex-none">
+          <button
+            className="flex flex-col items-center gap-2 flex-1 sm:flex-none rounded-lg p-1 -m-1 transition-colors hover:bg-blue-50"
+            onClick={() => onTeamClick?.(match.homeTeam, match.homeFlag)}
+            type="button"
+          >
             <img src={match.homeFlag} alt={match.homeTeam} className="w-12 h-8 object-contain drop-shadow-sm" />
             <span className="font-semibold text-gray-800 text-sm sm:text-base text-center line-clamp-1">{match.homeTeam}</span>
-          </div>
+          </button>
 
           {/* Scores */}
           <div className="flex items-center gap-3">
@@ -208,10 +213,14 @@ export default function MatchCard({ match, guess, onSaveGuess, now, badge }: Mat
           </div>
 
           {/* Away Team */}
-          <div className="flex flex-col items-center gap-2 flex-1 sm:flex-none">
+          <button
+            className="flex flex-col items-center gap-2 flex-1 sm:flex-none rounded-lg p-1 -m-1 transition-colors hover:bg-blue-50"
+            onClick={() => onTeamClick?.(match.awayTeam, match.awayFlag)}
+            type="button"
+          >
             <img src={match.awayFlag} alt={match.awayTeam} className="w-12 h-8 object-contain drop-shadow-sm" />
             <span className="font-semibold text-gray-800 text-sm sm:text-base text-center line-clamp-1">{match.awayTeam}</span>
-          </div>
+          </button>
         </div>
 
         {/* Action Button */}
