@@ -28,10 +28,28 @@ interface Phase {
   matches: Match[];
 }
 
+// FIFA 2026 bracket structure: maps matchId → feeder match IDs.
+const BRACKET_FEEDERS: Record<string, string[]> = {
+  '101': ['97', '98'],
+  '102': ['99', '100'],
+  '97': ['89', '90'],
+  '98': ['93', '94'],
+  '99': ['91', '92'],
+  '100': ['95', '96'],
+  '89': ['74', '77'],
+  '90': ['73', '75'],
+  '91': ['76', '78'],
+  '92': ['79', '80'],
+  '93': ['83', '84'],
+  '94': ['81', '82'],
+  '95': ['86', '88'],
+  '96': ['85', '87'],
+};
+
 /**
  * Reorder matches in earlier rounds so that bracket connector lines
  * correctly show which matches feed into the next round.
- * Two-pass approach: first assign all confirmed feeders, then fill gaps.
+ * Uses team names, labels, or hardcoded bracket structure to determine pairings.
  */
 function reorderForBracket(phases: Phase[]): Phase[] {
   if (phases.length <= 1) return phases;
@@ -56,6 +74,20 @@ function reorderForBracket(phases: Phase[]): Phase[] {
           m => !used.has(m.id) && (m.homeTeam === teamName || m.awayTeam === teamName),
         );
         if (feeder) {
+          slots[j].push(feeder);
+          used.add(feeder.id);
+        }
+      }
+    }
+
+    // Pass 1.5: use bracket structure to find feeders when teams are TBD
+    for (let j = 0; j < nextMatches.length; j++) {
+      if (slots[j].length >= slotsPerNext) continue;
+      const nextMatch = nextMatches[j];
+      const feederIds = BRACKET_FEEDERS[String(nextMatch.id)] || [];
+      for (const feederId of feederIds) {
+        const feeder = currentMatches.find(m => !used.has(m.id) && String(m.id) === feederId);
+        if (feeder && slots[j].length < slotsPerNext) {
           slots[j].push(feeder);
           used.add(feeder.id);
         }
@@ -161,12 +193,96 @@ export default function Bracket({ onTeamClick }: { onTeamClick: (name: string, f
 
     const categorized = knockoutMatches.map(m => ({ ...m, _phase: inferType(m) }));
 
+    const matchesByPhase: Record<string, (Match & { _phase: string })[]> = {};
     for (const type of phaseOrder) {
-      const matches = categorized.filter(m => m._phase === type);
+      matchesByPhase[type] = categorized.filter(m => m._phase === type);
+    }
+
+    const leftIds = new Set<string>();
+    const rightIds = new Set<string>();
+
+    const getFeederIds = (match: Match): string[] => {
+      return BRACKET_FEEDERS[String(match.id)] || [];
+    };
+
+    // Build side assignments from innermost (semi) outward
+    const sfMatches = matchesByPhase['semi'] || [];
+    const sfHalf = Math.ceil(sfMatches.length / 2);
+    sfMatches.slice(0, sfHalf).forEach(m => leftIds.add(m.id));
+    sfMatches.slice(sfHalf).forEach(m => rightIds.add(m.id));
+
+    // Assign QFs based on which SF they feed into
+    const qfMatches = matchesByPhase['quarter'] || [];
+    for (const sf of sfMatches) {
+      const feederIds = getFeederIds(sf);
+      for (const qf of qfMatches) {
+        if (feederIds.includes(String(qf.id))) {
+          if (leftIds.has(sf.id)) leftIds.add(qf.id);
+          else if (rightIds.has(sf.id)) rightIds.add(qf.id);
+        }
+      }
+    }
+    for (const m of qfMatches) {
+      if (!leftIds.has(m.id) && !rightIds.has(m.id)) {
+        if (qfMatches.filter(x => leftIds.has(x.id)).length < Math.ceil(qfMatches.length / 2))
+          leftIds.add(m.id);
+        else rightIds.add(m.id);
+      }
+    }
+
+    // Assign R16 based on which QF they feed into
+    const r16Matches = matchesByPhase['round_of_16'] || [];
+    for (const qf of qfMatches) {
+      const feederIds = getFeederIds(qf);
+      for (const r16 of r16Matches) {
+        if (feederIds.includes(String(r16.id))) {
+          if (leftIds.has(qf.id)) leftIds.add(r16.id);
+          else if (rightIds.has(qf.id)) rightIds.add(r16.id);
+        }
+      }
+    }
+    for (const m of r16Matches) {
+      if (!leftIds.has(m.id) && !rightIds.has(m.id)) {
+        if (r16Matches.filter(x => leftIds.has(x.id)).length < Math.ceil(r16Matches.length / 2))
+          leftIds.add(m.id);
+        else rightIds.add(m.id);
+      }
+    }
+
+    // Assign R32 based on which R16 they feed into
+    const r32Matches = matchesByPhase['round_of_32'] || [];
+    for (const r16 of r16Matches) {
+      const feederIds = getFeederIds(r16);
+      for (const r32 of r32Matches) {
+        if (feederIds.includes(String(r32.id))) {
+          if (leftIds.has(r16.id)) leftIds.add(r32.id);
+          else if (rightIds.has(r16.id)) rightIds.add(r32.id);
+        }
+      }
+    }
+    for (const m of r32Matches) {
+      if (!leftIds.has(m.id) && !rightIds.has(m.id)) {
+        if (r32Matches.filter(x => leftIds.has(x.id)).length < Math.ceil(r32Matches.length / 2))
+          leftIds.add(m.id);
+        else rightIds.add(m.id);
+      }
+    }
+
+    // If Brasil ended up on the right, swap sides (UX preference for bolão brasileiro)
+    const allKnockout = [...r32Matches, ...r16Matches, ...qfMatches, ...sfMatches];
+    const brasilOnRight = allKnockout.some(
+      m => rightIds.has(m.id) && (m.homeTeam === 'Brasil' || m.awayTeam === 'Brasil'),
+    );
+    const pickLeft = (id: string) => brasilOnRight ? rightIds.has(id) : leftIds.has(id);
+    const pickRight = (id: string) => brasilOnRight ? leftIds.has(id) : rightIds.has(id);
+
+    for (const type of phaseOrder) {
+      const matches = matchesByPhase[type] || [];
       if (matches.length === 0) continue;
-      const half = Math.ceil(matches.length / 2);
-      left.push({ type, name: phaseNames[type] || type, matches: matches.slice(0, half) });
-      right.push({ type, name: phaseNames[type] || type, matches: matches.slice(half) });
+      const leftMatches = matches.filter(m => pickLeft(m.id));
+      const rightMatches = matches.filter(m => pickRight(m.id));
+      if (leftMatches.length > 0) left.push({ type, name: phaseNames[type] || type, matches: leftMatches });
+      if (rightMatches.length > 0) right.push({ type, name: phaseNames[type] || type, matches: rightMatches });
     }
 
     const finalAndThird = categorized.filter(m => m._phase === 'final' || m._phase === 'third_place');
