@@ -12,6 +12,7 @@ const teamNamesPtBR: Record<string, string> = {
   "Bolivia": "Bolívia",
   "Bosnia and Herzegovina": "Bósnia e Herzegovina",
   "Brazil": "Brasil",
+  "Cape Verde": "Cabo Verde",
   "Cameroon": "Camarões",
   "Canada": "Canadá",
   "Chile": "Chile",
